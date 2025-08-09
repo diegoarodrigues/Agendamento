@@ -12,8 +12,15 @@ export default function App() {
   const [editing, setEditing] = useState<Event | null>(null)
   const [toast, setToast] = useState('')
 
-  const reload = () => listEvents().then(setEvents)
-  useEffect(reload, [])
+  const reload = async () => {
+    try {
+      const data = await listEvents()
+      setEvents(data)
+    } catch (err) {
+      console.error(err)
+    }
+  }
+  useEffect(() => { reload() }, [])
 
   const dayEvents = events.filter(e => e.start.startsWith(selectedDate.toISOString().slice(0,10)))
 
