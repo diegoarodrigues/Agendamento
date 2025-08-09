@@ -1,10 +1,6 @@
-export type Event = {
-  id: string;
+export type Appointment = {
+  id: number;
   title: string;
-  start: string; // ISO
-  end: string;   // ISO
-  location?: string;
   description?: string;
-  color?: string; // ex.: "#3b82f6"
-  remindMinutesBefore?: number; // opcional
+  dateTime: string;
 };
