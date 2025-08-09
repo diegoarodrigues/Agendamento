@@ -1,33 +1,29 @@
-import { createContext, useState, useContext } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import Dashboard from './pages/Dashboard';
-
-const AuthContext = createContext<{ token: string | null; setToken: (t: string | null) => void }>({ token: null, setToken: () => {} });
-export const useAuth = () => useContext(AuthContext);
-
-function PrivateRoute({ children }: { children: JSX.Element }) {
-  const { token } = useAuth();
-  return token ? children : <Navigate to="/login" />;
-}
+import { useEffect, useState } from 'react'
+import Calendar from './components/Calendar'
+import AgendaList from './components/AgendaList'
+import EventForm from './components/EventForm'
+import Toast from './components/Toast'
+import { listEvents, saveEvent, deleteEvent } from './lib/api'
+import { Event } from './types'
 
 export default function App() {
-  const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
+  const [events, setEvents] = useState<Event[]>([])
+  const [selectedDate, setSelectedDate] = useState(new Date())
+  const [editing, setEditing] = useState<Event | null>(null)
+  const [toast, setToast] = useState('')
+
+  const reload = () => listEvents().then(setEvents)
+  useEffect(reload, [])
+
+  const dayEvents = events.filter(e => e.start.startsWith(selectedDate.toISOString().slice(0,10)))
+
   return (
-    <AuthContext.Provider value={{ token, setToken }}>
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route
-          path="/"
-          element={
-            <PrivateRoute>
-              <Dashboard />
-            </PrivateRoute>
-          }
-        />
-      </Routes>
-    </AuthContext.Provider>
-  );
+    <div className="p-4 space-y-4">
+      <Calendar date={selectedDate} events={events} onSelect={d=>setSelectedDate(d)} />
+      <button className="bg-blue-500 text-white px-2" onClick={()=>setEditing({start:new Date().toISOString(),end:new Date().toISOString(),title:''} as any)}>Novo</button>
+      <AgendaList events={dayEvents} onEdit={e=>setEditing(e)} onDelete={async id=>{await deleteEvent(id); reload(); setToast('Excluído');}} />
+      {editing && <EventForm initial={editing} onSave={async e=>{await saveEvent(e); reload(); setEditing(null); setToast('Salvo');}} onClose={()=>setEditing(null)} />}
+      {toast && <Toast message={toast} onClose={()=>setToast('')} />}
+    </div>
+  )
 }

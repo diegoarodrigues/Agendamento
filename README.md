@@ -1,34 +1,29 @@
-# Agenda
+# Agendamento
 
-Aplicação de agendamento com **ASP.NET Core Web API**, **PostgreSQL** e **React**.
+## Requisitos
+- Docker
+- .NET 8
+- Node.js 18+
 
-## Banco de Dados
-Execute o PostgreSQL via Docker:
-```bash
-docker-compose up -d
+## Banco de dados
 ```
+docker compose up -d
+```
+PostgreSQL disponível em `localhost:5432` (usuario `ag_user`, senha `ag_pass`).
 
 ## Backend
-Pré-requisitos: .NET 6+
-
-1. Abra a solution `backend/Backend.sln` ou navegue até a pasta `backend`.
-2. Ajuste a string de conexão em `backend/appsettings.json` se necessário.
-3. Rode as migrations:
-```bash
+```
 cd backend
-# dotnet tool install --global dotnet-ef (se necessário)
-dotnet ef database update
+# ajustar connection string em appsettings.json se necessário
+# aplicar migrations e rodar
+dotnet run --project Agendamento.Api
 ```
-4. Execute a API:
-```bash
-dotnet run
-```
+Swagger em https://localhost:5001/swagger.
 
 ## Frontend
-```bash
+```
 cd frontend
 npm install
 npm run dev
 ```
-
-As rotas protegidas exigem um token JWT obtido via `POST /login` após cadastro em `POST /register`.
+A aplicação usa `VITE_API_URL` (padrão `http://localhost:5000`).
