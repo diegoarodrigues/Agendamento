@@ -5,35 +5,7 @@ import EventForm from './components/EventForm';
 import { Event } from './types';
 import { add, fmt, parse } from './lib/date';
 
-const STORAGE_KEY = 'agenda.events.v1';
-
-const sample = (): Event[] => {
-  const now = new Date();
-  const day = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 9, 0);
-  return [
-    {
-      id: crypto.randomUUID(),
-      title: 'Reunião de equipe',
-      start: day.toISOString(),
-      end: new Date(day.getTime() + 60 * 60 * 1000).toISOString(),
-      color: '#3b82f6',
-    },
-    {
-      id: crypto.randomUUID(),
-      title: 'Almoço com cliente',
-      start: new Date(day.getTime() + 3 * 60 * 60 * 1000).toISOString(),
-      end: new Date(day.getTime() + 4 * 60 * 60 * 1000).toISOString(),
-      color: '#10b981',
-    },
-    {
-      id: crypto.randomUUID(),
-      title: 'Call do projeto',
-      start: new Date(day.getTime() + 24 * 60 * 60 * 1000).toISOString(),
-      end: new Date(day.getTime() + 25 * 60 * 60 * 1000).toISOString(),
-      color: '#f59e0b',
-    },
-  ];
-};
+const API_URL = 'http://localhost:5000/api/events';
 
 function App() {
   const [events, setEvents] = useState<Event[]>([]);
@@ -44,19 +16,11 @@ function App() {
   const [selected, setSelected] = useState<Event | null>(null);
 
   useEffect(() => {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) setEvents(JSON.parse(raw));
-    else {
-      const seed = sample();
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(seed));
-      setEvents(seed);
-    }
+    fetch(API_URL)
+      .then(r => r.json())
+      .then(setEvents)
+      .catch(() => setEvents([]));
   }, []);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(events));
-  }, [events]);
-
 
   useEffect(() => {
     const timers = events
@@ -86,14 +50,32 @@ function App() {
     [events, search]
   );
 
-  const handleSave = (ev: Event) => {
+  const saveRemote = async (ev: Event) => {
+    const exists = events.find(e => e.id === ev.id);
+    const method = exists ? 'PUT' : 'POST';
+    const url = exists ? `${API_URL}/${ev.id}` : API_URL;
+    const res = await fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(ev),
+    });
+    if (method === 'POST') {
+      const created = await res.json();
+      return created as Event;
+    }
+    return ev;
+  };
+
+  const handleSave = async (ev: Event) => {
+    const saved = await saveRemote(ev);
     setEvents((prev) => {
-      const exists = prev.find((p) => p.id === ev.id);
-      return exists ? prev.map((p) => (p.id === ev.id ? ev : p)) : [...prev, ev];
+      const exists = prev.find((p) => p.id === saved.id);
+      return exists ? prev.map((p) => (p.id === saved.id ? saved : p)) : [...prev, saved];
     });
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
+    await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
     setEvents((prev) => prev.filter((e) => e.id !== id));
   };
 
